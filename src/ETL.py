@@ -13,14 +13,14 @@ class BankLoan:
 
     # Select Columns with transformations
     def transform(self, df):
-        return df
+        return df.withColumn("Days_to_Sign_the_loan",F.datediff(date_format("effective_date"),date_format("agreement_signing_date")))
 
     # Save the final Dataframe in your desired location in parquet/json format
     def load(self, transformedDF):
-        transformedDF.write\
-            .bucketBy(4,"Country")\
-            .saveAsTable("country_wise_loans", format="parquet")
-        # return transformedDF.show()
+        # transformedDF.write\
+        #     .bucketBy(4,"Country")\
+        #     .saveAsTable("country_wise_loans", format="parquet")
+        return transformedDF.show()
         
     # Pipelining previous functions
     def run(self):
@@ -31,7 +31,8 @@ if __name__ == "__main__":
     import argparse
     from pyspark.sql import SparkSession
     from pyspark.context import SparkContext
-    from data_clean import clean
+    import pyspark.sql.functions as F
+    from data_clean import clean,date_format
 
     # Used to make it work with python directly without involving spaprk-submit
     sc = SparkContext('local')

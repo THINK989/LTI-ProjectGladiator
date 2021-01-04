@@ -1,4 +1,5 @@
 import pyspark.sql.functions as F
+from pyspark.sql.types import TimestampType
 from re import sub
 
 def delete_columns(df):
@@ -12,4 +13,8 @@ def renaming(df):
     return df.select([F.col(column).alias(sub(r"\([^)]*\)","",column).strip().replace(" ","_").lower()) for column in df.columns])
     
 def clean(df):
-    return renaming(delete_columns(df))
+    return renaming(df)
+
+def date_format(date_column):
+    return date_column.split()[0]
+
