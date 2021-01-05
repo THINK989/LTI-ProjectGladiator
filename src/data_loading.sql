@@ -94,7 +94,7 @@ SET @@SESSION.sql_mode='ALLOW_INVALID_DATES';
 
 -- Create Hive Tables
 Create external table if not exists loanStatement (
-    end_of_period string,
+    end_of_period date,
     loan_number string,
     region string,
     country_code string,
@@ -120,13 +120,13 @@ Create external table if not exists loanStatement (
     repaid_3rd_party double,
     due_3rd_party double,
     loans_held double,
-    first_repayment_date string,
-    last_repayment_date string,
-    agreement_signing_date string,
-    board_approval_date string,
-    effective_date string,
-    closed_date string,
-    last_disbursed_date string
+    first_repayment_date date,
+    last_repayment_date date,
+    agreement_signing_date date,
+    board_approval_date date,
+    effective_date date,
+    closed_date date,
+    last_disbursed_date date
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
