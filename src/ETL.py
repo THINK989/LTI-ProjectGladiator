@@ -1,3 +1,4 @@
+
 class BankLoan:
 
     def __init__(self, input_path=None):
@@ -6,7 +7,7 @@ class BankLoan:
     # Read CSV file from source location
     def extract(self):
         # spark.read.options(header="true", inferSchema="true", delimiter=",").csv(self.input_path)
-        return spark.sql("select * from worldbankloan_db.loanstatement")
+        return preprocess(spark.sql("select * from worldbankloan_db.loanstatement"))
 
     # Select Columns with transformations
     def transform(self, df):
@@ -33,15 +34,38 @@ class BankLoan:
                     .agg(F.round(F.avg("Time_taken_for_Repayment")).alias("Average_repayment_days"))\
                     .orderBy(F.col("country"))
         
+        # top 10 loan type  ?
+        bsq5 = df.groupBy("loan_type")\
+                    .agg(F.count("*").alias("Number of Occurance"))\
+                    .orderBy(F.col("Number of Occurance").desc())
         
-        return (bsq1,bsq2,bsq3,bsq4)
+        # In India , Which project type utilised more loans ?
+        bsq6 = df.groupBy("project_name","country")\
+                    .agg(F.count("*").alias("Number of Occurance"))\
+                    .where(F.col("country")=="India")\
+                    .orderBy(F.col("Number of Occurance").desc())
+        
+        # Percentage of loan issued to APAC region in current year ?
+        total_amount = int(list(df.select(F.sum("orig_prin_amount")).rdd.flatMap(lambda x:x).collect())[0])
+        bsq7 = df.groupBy("region")\
+                    .agg(F.sum("orig_prin_amount").alias("Original Principle Amount"))\
+                    .withColumn("Percentage of Loan", F.round((F.col("Original Principle Amount")*100)/total_amount,0))\
+                    .orderBy(F.col("Percentage of Loan").desc())
+        
+        return (bsq1, bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, df)
     
-    # Save the final Dataframe in your desired location in parquet/json format
-    def load(self, bsq1,bsq2,bsq3,bsq4):
-        # transformedDF.write\
-        #     .bucketBy(4,"Country")\
-        #     .saveAsTable("country_wise_loans", format="parquet")
-        return bsq4.show(10)
+    # Save the final Dataframe in your desired location in different codecs for parquet format
+    def load(self, bsq1, bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, transformedDF):
+        
+        final_df = transformedDF.repartition('country')
+        codecs = ["snappy","gzip","lz4","bzip2","deflate"]
+        
+        for cod in codecs:
+            final_df.write\
+                    .mode("overwrite")\
+                    .options(codec=cod)\
+                    .parquet(str(Path(__file__).parent)+"/output/df_parquet_"+cod)
+        
         
     # Pipelining previous functions
     def run(self):
@@ -52,7 +76,8 @@ if __name__ == "__main__":
     import argparse
     from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
-    from data_clean import clean
+    from pathlib import Path
+    from data_clean import preprocess
 
     # Used to make it work with python directly without involving spaprk-submit
     spark = SparkSession.builder.master('local')\
