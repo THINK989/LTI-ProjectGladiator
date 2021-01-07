@@ -1,11 +1,14 @@
 import pyspark.sql.functions as F
 
-def delete_columns(df):
-    count_ = df.count()
-    dict_ = {column:df.filter(df[column].isNull()).count() for column in df.columns}
-    columns_to_delete = [key for key, value in dict_.items() if value > (count_//2)]
-    return df.drop(*columns_to_delete)
+
+def fill_null(df):
+    return df.fillna("Others",subset=["project_name"])
 
 
-def clean(df):
-    return delete_columns(df)
+def string_handling(df):
+    return df.withColumn("region_upper", F.upper(F.col("region"))).drop("region")\
+            .withColumnRenamed("region_upper","region")
+
+
+def preprocess(df):
+    return string_handling(fill_null(df))
