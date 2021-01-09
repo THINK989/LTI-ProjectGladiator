@@ -1,3 +1,7 @@
+create database WorldBankLoan_DB;
+use WorldBankLoan_DB;
+
+
 --Create Table Mysql
 Create table loanStatement (
     end_of_period date,
