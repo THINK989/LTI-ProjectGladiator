@@ -1,7 +1,6 @@
 import pyspark.sql.functions as F
 from pprint import pprint 
 from collections import defaultdict
-import datetime
 
 def delete_columns(df):
     count_ = df.count()
@@ -19,18 +18,26 @@ def type_dict(df):
         if key in ["double","float"]:
             df = df.fillna(0,subset=val)    
         elif key == "string":
-            df = df.fillna("Others", subset=["project_name","region","country"])
+            df = df.fillna("Others", subset=["project_name","region","country","borrower","project_id"])\
+                    .na.drop(subset=["loan_status","loan_type"])
         elif key == "date":
-            df = df.fillna(F.to_date(F.lit('1850/01/01'),'yyyy/MM/dd'), subset=["effective_date","closed_date","last_disbursed_date"])\
-                    .withColumn("Days_to_Sign_the_loan",F.when(F.col("agreement_signing_date").isNull() | F.col("board_approval_date").isNull() ,\
-                       F.lit(float("inf"))).otherwise(F.datediff("agreement_signing_date","board_approval_date")))\
+            for col_name in ["effective_date","closed_date","last_disbursed_date"]:
+                df = df.withColumn(col_name+"_clone",\
+                        F.when(F.col(col_name).isNull(),\
+                        F.to_date(F.lit('1850/01/01'),'yyyy/MM/dd'))\
+                        .otherwise(F.col(col_name)))\
+                        .drop(col_name)\
+                        .withColumnRenamed(col_name+"_clone",col_name)
+                   
+            df =  df.withColumn("Days_to_Sign_the_loan",F.when(F.col("agreement_signing_date").isNull() | F.col("board_approval_date").isNull() ,\
+                        F.lit(float("inf"))).otherwise(F.datediff("agreement_signing_date","board_approval_date")))\
                     .withColumn("Time_taken_for_Repayment",F.when(F.col("last_repayment_date").isNull() | F.col("last_repayment_date").isNull() ,\
-                       F.lit(float("inf"))).otherwise(F.datediff("last_repayment_date","first_repayment_date")))\
-                           .drop("last_repayment_date","first_repayment_date","agreement_signing_date","board_approval_date")
+                        F.lit(float("inf"))).otherwise(F.datediff("last_repayment_date","first_repayment_date")))\
+                            .drop("last_repayment_date","first_repayment_date","agreement_signing_date","board_approval_date")
             
     return df
 
     
 
 def preprocess(df):
-    return type_dict(delete_columns(df))
+    return type_dict(df)
