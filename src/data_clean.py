@@ -70,7 +70,7 @@ def handling_null(df):
                     .withColumn("time_taken_for_repayment",F.when(F.col("last_repayment_date").isNull() | F.col("first_repayment_date").isNull() ,\
                         F.lit(float("inf"))).otherwise(F.datediff("last_repayment_date","first_repayment_date")))\
                             .drop("last_repayment_date","first_repayment_date","agreement_signing_date","board_approval_date")
-      
+    
     return df
 
 def string_handling(df):
