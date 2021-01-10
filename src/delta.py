@@ -1,39 +1,36 @@
-
 class DeltaLoans:
 
     def __init__(self, input_path=None):
         self.input_path = input_path
 
-    # Read CSV file from source location
-    def extract(self):
-        return spark.read.orc(self.input_path+"df_orc_lz4")
+    def ETL(self):
+        for file in os.listdir(self.input_path):
+            filetype = file.split("_")[1]
+            if filetype == "orc":
+                spark.read.orc(self.input_path+file)\
+                        .write.format("delta")\
+                        .save(str(Path(__file__).parent)+"/delta/delta"+file)
+            else:
+                spark.read.parquet(self.input_path+file)\
+                        .write.format("delta")\
+                        .save(str(Path(__file__).parent)+"/delta/delta"+file)
         
-    
-    # Select Columns with transformations
-    def transform(self, df):
-        return df
-    
-    # Save the final Dataframe in your desired location in different codecs for parquet format
-    def load(self, transformedDF):
-        transformedDF.write.format("delta").save(str(Path(__file__).parent)+"/delta/df_orc_delta")
-
-        
-    # Pipelining previous functions
+    # run ETL function
     def run(self):
-        self.load(self.transform(self.extract()))
+        self.ETL()
 
 
 if __name__ == "__main__":
-    import argparse
+    import argparse, os
+    import findspark
+    findspark.init()
     from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
     from pathlib import Path
-    from data_clean import preprocess
-
+    
     # Used to make it work with python directly without involving spaprk-submit
     spark = SparkSession.builder\
                         .appName('Bank_Loan')\
-                        .config("spark.jars.packages", "io.delta:delta-core_2.12:0.7.0.jar")\
                         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
                         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
                         .getOrCreate()                         
