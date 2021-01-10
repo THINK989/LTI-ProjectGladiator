@@ -1,6 +1,13 @@
 import pyspark.sql.functions as F
 from pprint import pprint 
 from collections import defaultdict
+
+import datetime
+import csv
+
+
+
+
 import datetime
 import csv
 
@@ -45,7 +52,11 @@ def type_dict(df):
     countryList=list(set(list(countryCode)))
     # for i in countryList:
     #     print(i['country_code'],i['country'])
+
     # with open('data/country.csv', 'w', newline='') as file:
+
+    # with open('country.csv', 'w', newline='') as file:
+
     #     writer = csv.writer(file)
     #     writer.writerow(["country_code", "country"])
     #     for i in countryList:
