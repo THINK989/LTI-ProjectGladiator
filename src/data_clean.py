@@ -37,7 +37,10 @@ def type_dict(df):
             
     return df
 
+def string_handling(df):
+    return df.withColumn("region_upper", F.upper(F.col("region"))).drop("region")\
+            .withColumnRenamed("region_upper","region")
     
 
 def preprocess(df):
-    return type_dict(df)
+    return string_handling(type_dict(df))
