@@ -1,12 +1,11 @@
 import pyspark.sql.functions as F
 from pprint import pprint 
 from collections import defaultdict
-<<<<<<< HEAD
 import datetime
 import csv
-=======
 
->>>>>>> 87f5a751cc9040807507b26b060466f99d9c5edf
+
+
 def delete_columns(df):
     count_ = df.count()
     dict_ = {column:df.filter(df[column].isNull()).count() for column in df.columns}
