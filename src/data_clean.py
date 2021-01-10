@@ -45,7 +45,7 @@ def type_dict(df):
     countryList=list(set(list(countryCode)))
     # for i in countryList:
     #     print(i['country_code'],i['country'])
-    # with open('country.csv', 'w', newline='') as file:
+    # with open('data/country.csv', 'w', newline='') as file:
     #     writer = csv.writer(file)
     #     writer.writerow(["country_code", "country"])
     #     for i in countryList:
