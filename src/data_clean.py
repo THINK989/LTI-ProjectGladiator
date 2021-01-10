@@ -1,7 +1,12 @@
 import pyspark.sql.functions as F
 from pprint import pprint 
 from collections import defaultdict
+<<<<<<< HEAD
+import datetime
+import csv
+=======
 
+>>>>>>> 87f5a751cc9040807507b26b060466f99d9c5edf
 def delete_columns(df):
     count_ = df.count()
     dict_ = {column:df.filter(df[column].isNull()).count() for column in df.columns}
@@ -13,6 +18,7 @@ def type_dict(df):
     type_dict = defaultdict(list)
     for col_name,type in df.dtypes:
         type_dict[type].append(col_name)
+    print(type_dict)
     
     for key, val in type_dict.items():
         if key in ["double","float"]:
@@ -35,6 +41,17 @@ def type_dict(df):
                         F.lit(float("inf"))).otherwise(F.datediff("last_repayment_date","first_repayment_date")))\
                             .drop("last_repayment_date","first_repayment_date","agreement_signing_date","board_approval_date")
             
+    countryCode=df.select('country_code','country').rdd.collect()
+    # country=df.select('country').rdd.flatMap(lambda x: x).collect()
+    countryList=list(set(list(countryCode)))
+    # for i in countryList:
+    #     print(i['country_code'],i['country'])
+    # with open('country.csv', 'w', newline='') as file:
+    #     writer = csv.writer(file)
+    #     writer.writerow(["country_code", "country"])
+    #     for i in countryList:
+    #         writer.writerow([str(i['country_code']),str(i['country'])])
+    
     return df
 
 def string_handling(df):
