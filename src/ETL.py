@@ -73,6 +73,8 @@ class BankLoan:
 
 
 if __name__ == "__main__":
+    import findspark
+    findspark.init()
     import argparse
     from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
