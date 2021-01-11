@@ -90,6 +90,7 @@ set end_of_period = str_to_date(@end_of_period, '%m/%d/%Y'),
     closed_date = str_to_date(@closed_date, '%m/%d/%Y'),
     last_disbursed_date = str_to_date(@last_disbursed_date, '%m/%d/%Y');
 
+SELECT * FROM loanStatement;
 
 SHOW VARIABLES LIKE "secure_file_priv";
 
@@ -136,5 +137,31 @@ ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '\t'
 LOCATION '/user/root/hiveEtxTable/WorldBankLoan';
 
-
+hive> select count(*) from loanStatement;
+WARNING: Hive-on-MR is deprecated in Hive 2 and may not be available in the future versions. Consider using a different execution engine (i.e. spark, tez) or using Hive 1.X releases.
+Query ID = user_20210111172454_7c8613a5-4528-4bb8-a467-0add7b17e5c0
+Total jobs = 1
+Launching Job 1 out of 1
+Number of reduce tasks determined at compile time: 1
+In order to change the average load for a reducer (in bytes):
+  set hive.exec.reducers.bytes.per.reducer=<number>
+In order to limit the maximum number of reducers:
+  set hive.exec.reducers.max=<number>
+In order to set a constant number of reducers:
+  set mapreduce.job.reduces=<number>
+Starting Job = job_1610298422803_0001, Tracking URL = http://flx:8088/proxy/application_1610298422803_0001/
+Kill Command = /home/user/hadoop-2.10.1/bin/hadoop job  -kill job_1610298422803_0001
+Hadoop job information for Stage-1: number of mappers: 2; number of reducers: 1
+2021-01-11 17:25:41,470 Stage-1 map = 0%,  reduce = 0%
+2021-01-11 17:26:02,377 Stage-1 map = 50%,  reduce = 0%, Cumulative CPU 3.97 sec
+2021-01-11 17:26:05,658 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 10.99 sec
+2021-01-11 17:26:14,324 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 14.19 sec
+MapReduce Total cumulative CPU time: 14 seconds 190 msec
+Ended Job = job_1610298422803_0001
+MapReduce Jobs Launched: 
+Stage-Stage-1: Map: 2  Reduce: 1   Cumulative CPU: 14.19 sec   HDFS Read: 289134370 HDFS Write: 106 SUCCESS
+Total MapReduce CPU Time Spent: 14 seconds 190 msec
+OK
+987441
+Time taken: 83.077 seconds, Fetched: 1 row(s)
     
