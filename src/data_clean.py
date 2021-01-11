@@ -2,7 +2,7 @@ import pyspark.sql.functions as F
 from pprint import pprint 
 from collections import defaultdict
 import csv, os
-from googletrans import Translator
+# from googletrans import Translator
 
 def delete_columns(df):
     # dict_ = {column:df.filter(df[column].isNull()).count() for column in df.columns}
@@ -65,35 +65,25 @@ def string_handling(df):
     return df.withColumn("region_upper", F.upper(F.col("region"))).drop("region")\
             .withColumnRenamed("region_upper","region")
     
-def translator_csv(df):
-    if not os.path.exists("borrower.csv"):
-        translator = Translator()
-        borrowers=set(df.select("borrower").rdd.flatMap(lambda x:x).collect())
-        borrower_trans = [(i,translator.translate(i).text) for i in borrowers]
-        with open('borrower.csv', 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(["borrower", "translation"])
-            for borrower, translation in borrower_trans:
-                writer.writerow([borrower,translation])      
-    return df
+# def translator_csv(df):
+#     if not os.path.exists("borrower.csv"):
+#         translator = Translator()
+#         borrowers=set(df.select("borrower").rdd.flatMap(lambda x:x).collect())
+#         borrower_trans = [(i,translator.translate(i).text) for i in borrowers]
+#         with open('borrower.csv', 'w', newline='') as file:
+#             writer = csv.writer(file)
+#             writer.writerow(["borrower", "translation"])
+#             for borrower, translation in borrower_trans:
+#                 writer.writerow([borrower,translation])      
+#     return df
 
 def clean_borrower(df):
     
-    with open("borrower.csv", mode='r') as borrowers:
-
-        borrower_reader = csv.reader(borrowers)
-        for borrower,trans in borrower_reader:
-            try:
-                df = df.withColumn("borrower_clone", F.when(F.col("borrower")==borrower, trans).otherwise(F.col("borrower")))
-            except e:
-                print(e)
-    
-    # df = df.withColumn("borrower_clone2", F.when(F.col("borrower_clone")=="", "Other").otherwise(F.col("borrower_clone")))\
-    #         .withColumn("borrower_upper", F.upper(F.col("borrower_clone2")))\
-    #         .drop("borrower","borrower_clone","borrower_clone2")\
-    #         .withColumnRenamed("borrower_upper", "borrower")
-    
+    df = df.withColumn("borrower_upper", F.regexp_replace(F.upper(F.col("borrower")),"[^A-Z ,&.]", ""))\
+            .withColumn("borrower_clone", F.when(F.col("borrower_upper")=="", "OTHER").otherwise(F.col("borrower_upper")))\
+            .drop("borrower","borrower_upper")\
+            .withColumnRenamed("borrower_clone", "borrower")
     return df
 
 def preprocess(df):
-    return translator_csv(df)
+    return string_handling(clean_borrower(handling_null(country_code_hashmap(delete_columns(df)))))
