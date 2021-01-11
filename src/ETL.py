@@ -65,7 +65,8 @@ class BankLoan:
                     .mode("overwrite")\
                     .options(codec=cod)\
                     .parquet(str(Path(__file__).parent)+"/output/df_parquet_"+cod)
-        
+                    
+        transformedDF.toPandas().to_csv('data/output.csv',index=False)
         
     # Pipelining previous functions
     def run(self):
