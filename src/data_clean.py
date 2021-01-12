@@ -39,6 +39,7 @@ def handling_null(df):
                 code_reader = csv.reader(country_code)
                 next(code_reader, None)
                 for country_code, country in code_reader:
+                    print(country_code,country)
                     df = df.withColumn("gaurantor_country_clone", F.when(F.col("gaurantor_countrycode")==country_code, country).otherwise(F.col("gaurantor_country")))\
                             .withColumn("gaurantor_countrycode_clone", F.when(F.col("gaurantor_country")==country, country_code).otherwise(F.col("gaurantor_countrycode")))
 
@@ -70,7 +71,7 @@ def handling_null(df):
                         F.lit(float("inf"))).otherwise(F.datediff("agreement_signing_date","board_approval_date")))\
                     .withColumn("time_taken_for_repayment",F.when(F.col("last_repayment_date").isNull() | F.col("first_repayment_date").isNull() ,\
                         F.lit(float("inf"))).otherwise(F.datediff("last_repayment_date","first_repayment_date")))\
-                            .drop("last_repayment_date","first_repayment_date","agreement_signing_date","board_approval_date")
+                            .drop("agreement_signing_date","board_approval_date")
       
     return df
 
@@ -83,7 +84,7 @@ def string_handling(df):
 def clean_borrower(df):
     #TODO: Change case, remove special characters, replace empty string with "OTHER"
     df = df.withColumn("borrower_upper", F.regexp_replace(F.upper(F.col("borrower")),"[\n\r]|[^A-Z ,&.]", ""))\
-            .replace(to_replace={"","OTHER"}, subset=["borrower_upper"])\
+            .replace(to_replace={"":"OTHER"}, subset=["borrower_upper"])\
             .drop("borrower")\
             .withColumnRenamed("borrower_upper", "borrower")
     return df

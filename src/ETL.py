@@ -1,11 +1,11 @@
-
 class BankLoan:
 
-    def __init__(self, input_path=None):
+    def __init__(self, input_path=None):        
         self.input_path = input_path
 
     # Read CSV file from source location
     def extract(self):
+        
         # spark.read.options(header="true", inferSchema="true", delimiter=",").csv(self.input_path)
         return preprocess(spark.sql("select * from worldbankloan_db.loanstatement"))
 
@@ -23,7 +23,7 @@ class BankLoan:
                 .limit(3)
         
         # Which countries that had at least one cancellation with the assumption that they had borrowed enough number of loan
-        set_ = set(df.select("country").where(F.col("loan_status") == "Fully Cancelled" | F.col("loan_status") == "Cancelled").rdd.flatMap(lambda x:x).collect())
+        set_ = set(df.select("country").filter(F.col("loan_status").isin("Fully Cancelled","Cancelled")).rdd.flatMap(lambda x:x).collect())
         bsq3 = df.groupBy("country")\
                 .agg(F.count("*").alias("Total_Requests"))\
                 .where(F.col("country").isin(set_))\
@@ -68,22 +68,25 @@ class BankLoan:
         #             .bucketBy(50,key='row_id')\
         #             .sortBy('country') \
         #             .saveAsTable('bucketed_dataframe', format='parquet')
-        final_df = transformedDF.repartition('region')
-        codecs = ["snappy","gzip","lz4","bzip2","deflate"]
-        file_format = ["parquet", "orc"]
-        for fileformat in file_format:
-            for cod in codecs:
-                try:
-                    final_df.write\
-                            .format(fileformat)\
-                            .mode("overwrite")\
-                            .options(codec=cod)\
-                            .save("file:///"+str(Path(__file__).parent)+"/output_region/df_"+fileformat+"_"+cod)
-                except:
-                    pass
-                    
-        transformedDF.toPandas().to_csv('data/output.csv',index=False)
         
+        # for fileformat in file_format:
+        #     for cod in codecs:
+        #         try:
+        #             final_df.write\
+        #                     .format(fileformat)\
+        #                     .mode("overwrite")\
+        #                     .options(codec=cod)\
+        #                     .save("file:///"+str(Path.cwd())+"/data/output_region/df_"+fileformat+"_"+cod)
+        #         except:
+        #             pass
+        #transformedDF.toPandas().to_csv('data/output.csv',index=False)
+    
+        s3Obj.run(transformedDF)
+       
+       # snowflakeObj.snowflakeWrite(transformedDF)
+        snowflakeObj.snowflakeRead(spark)
+    
+    
     # Pipelining previous functions
     def run(self):
         self.load(*self.transform(self.extract()))
@@ -97,6 +100,8 @@ if __name__ == "__main__":
     import pyspark.sql.functions as F
     from pathlib import Path
     from data_clean import preprocess
+    from spark_s3 import S3LOANLOAD
+    from spark_snowflake import SNOWFLAKELOANLOAD
 
     # Used to make it work with python directly without involving spaprk-submit
     spark = SparkSession.builder.master('local')\
@@ -109,4 +114,8 @@ if __name__ == "__main__":
                         default='data/IBRD_Statement_Of_Loans_-_Historical_Data.csv')
     args = parser.parse_args()
     bk = BankLoan(input_path=args.input_path)
+    s3Obj=S3LOANLOAD()
+    snowflakeObj=SNOWFLAKELOANLOAD()
     bk.run()
+    
+    
