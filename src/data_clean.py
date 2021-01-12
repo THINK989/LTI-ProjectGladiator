@@ -5,8 +5,8 @@ import csv, os
 # from googletrans import Translator
 
 def delete_columns(df):
-    dict_ = {column:df.filter(df[column].isNull()).count() for column in df.columns}
-    print(dict_)
+    # dict_ = {column:df.filter(df[column].isNull()).count() for column in df.columns}
+    # print(dict_)
     return df.drop("curr_of_commitment")
 
 def country_code_hashmap(df):
@@ -34,23 +34,23 @@ def handling_null(df):
         
         #* If data is of type string    
         elif key == "string":
-            #* fill null values with "Other"
-            df = df.fillna("Others", subset=["project_name","region","country","borrower","project_id"])\
-                    .na.drop(subset=["loan_status","loan_type"])\
-                    .filter(~F.col("country").isin("Repaid","Disbursed"))
-            
             #* use country code and country as hashmap to replace null values and drop rows where it is not possible        
             with open("country.csv", mode='r') as country_code:
                 code_reader = csv.reader(country_code)
                 for country_code, country in code_reader:
                     df = df.withColumn("gaurantor_country_clone", F.when(F.col("gaurantor_countrycode")==country_code, country).otherwise(F.col("gaurantor_country")))\
                             .withColumn("gaurantor_countrycode_clone", F.when(F.col("gaurantor_country")==country, country_code).otherwise(F.col("gaurantor_countrycode")))
-                            
+
+            #* fill null values with "Other"
+            df = df.replace(to_replace={"":"Others"}, subset=["project_name","region","country","borrower","project_id"])\
+                    .na.drop(subset=["loan_status","loan_type"])\
+                    .filter(~F.col("country").isin("Repaid","Disbursed"))
+            
+          
             for col_name in ["gaurantor_countrycode","gaurantor_country"]:
                     df = df.drop(col_name)\
-                            .withColumnRenamed(col_name+"_clone",col_name)\
-                            .na.drop(col_name)
-        
+                            .withColumnRenamed(col_name+"_clone",col_name)
+                            
         #* If data is of type date         
         elif key == "date":
             
@@ -91,11 +91,12 @@ def string_handling(df):
 
 def clean_borrower(df):
     #TODO: Change case, remove special characters, replace empty string with "OTHER"
-    df = df.withColumn("borrower_upper", F.regexp_replace(F.upper(F.col("borrower")),"[^A-Z ,&.]", ""))\
-            .withColumn("borrower_clone", F.when(F.col("borrower_upper")=="", "OTHER").otherwise(F.col("borrower_upper")))\
-            .drop("borrower","borrower_upper")\
-            .withColumnRenamed("borrower_clone", "borrower")
+    df = df.withColumn("borrower_upper", F.regexp_replace(F.upper(F.col("borrower")),"[\n\r]|[^A-Z ,&.]", ""))\
+            .replace(to_replace={"","OTHER"}, subset=["borrower_upper"])\
+            .drop("borrower")\
+            .withColumnRenamed("borrower_upper", "borrower")
     return df
+
 
 def preprocess(df):
     return string_handling(clean_borrower(handling_null(country_code_hashmap(delete_columns(df)))))

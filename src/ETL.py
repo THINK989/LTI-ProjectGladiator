@@ -23,7 +23,7 @@ class BankLoan:
                 .limit(3)
         
         # Which countries that had at least one cancellation with the assumption that they had borrowed enough number of loan
-        set_ = set(df.select("country").where(F.col("loan_status") == "Fully Cancelled").rdd.flatMap(lambda x:x).collect())
+        set_ = set(df.select("country").where(F.col("loan_status") == "Fully Cancelled" | F.col("loan_status") == "Cancelled").rdd.flatMap(lambda x:x).collect())
         bsq3 = df.groupBy("country")\
                 .agg(F.count("*").alias("Total_Requests"))\
                 .where(F.col("country").isin(set_))\
@@ -32,7 +32,7 @@ class BankLoan:
         # Find the average repayment period for a country 
         bsq4 = df.groupBy("country")\
                     .agg(F.round(F.avg("time_taken_for_repayment")).alias("Average_repayment_days"))\
-                    .orderBy(F.col("country"))
+                    .orderBy(F.col("Average_repayment_days"))
         
         # top 10 loan type  ?
         bsq5 = df.groupBy("loan_type")\
@@ -55,16 +55,21 @@ class BankLoan:
         return (bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, df)
     
     # Save the final Dataframe in your desired location in different codecs for parquet format
-    def load(self, bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, transformedDF):
+    def load(self, bsq1, bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, transformedDF):
         
-        final_df = transformedDF.repartition('country')
+        final_df = transformedDF.repartition('region')
         codecs = ["snappy","gzip","lz4","bzip2","deflate"]
-        
-        for cod in codecs:
-            final_df.write\
-                    .mode("overwrite")\
-                    .options(codec=cod)\
-                    .parquet(str(Path(__file__).parent)+"/output/df_parquet_"+cod)
+        file_format = ["parquet", "orc"]
+        for fileformat in file_format:
+            for cod in codecs:
+                try:
+                    final_df.write\
+                            .format(fileformat)\
+                            .mode("overwrite")\
+                            .options(codec=cod)\
+                            .save("file:///"+str(Path(__file__).parent)+"/output_region/df_"+fileformat+"_"+cod)
+                except:
+                    pass
                     
         transformedDF.toPandas().to_csv('data/output.csv',index=False)
         
