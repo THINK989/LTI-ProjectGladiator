@@ -37,6 +37,7 @@ def handling_null(df):
             #* use country code and country as hashmap to replace null values and drop rows where it is not possible        
             with open("country.csv", mode='r') as country_code:
                 code_reader = csv.reader(country_code)
+                next(code_reader, None)
                 for country_code, country in code_reader:
                     df = df.withColumn("gaurantor_country_clone", F.when(F.col("gaurantor_countrycode")==country_code, country).otherwise(F.col("gaurantor_country")))\
                             .withColumn("gaurantor_countrycode_clone", F.when(F.col("gaurantor_country")==country, country_code).otherwise(F.col("gaurantor_countrycode")))
@@ -49,7 +50,8 @@ def handling_null(df):
           
             for col_name in ["gaurantor_countrycode","gaurantor_country"]:
                     df = df.drop(col_name)\
-                            .withColumnRenamed(col_name+"_clone",col_name)
+                            .withColumnRenamed(col_name+"_clone",col_name)\
+                            .replace(to_replace={"":"Others"}, subset=[col_name])
                             
         #* If data is of type date         
         elif key == "date":
@@ -76,18 +78,7 @@ def string_handling(df):
     #TODO: change case for region column
     return df.withColumn("region_upper", F.upper(F.col("region"))).drop("region")\
             .withColumnRenamed("region_upper","region")
-    
-# def translator_csv(df):
-#     if not os.path.exists("borrower.csv"):
-#         translator = Translator()
-#         borrowers=set(df.select("borrower").rdd.flatMap(lambda x:x).collect())
-#         borrower_trans = [(i,translator.translate(i).text) for i in borrowers]
-#         with open('borrower.csv', 'w', newline='') as file:
-#             writer = csv.writer(file)
-#             writer.writerow(["borrower", "translation"])
-#             for borrower, translation in borrower_trans:
-#                 writer.writerow([borrower,translation])      
-#     return df
+
 
 def clean_borrower(df):
     #TODO: Change case, remove special characters, replace empty string with "OTHER"

@@ -13,8 +13,8 @@ class BankLoan:
     def transform(self, df):
         
         # How many days taken to sign the loan and the other was how many days taken for repayment.
-        # bsq1 = df.withColumn("Days_to_Sign_the_loan",F.datediff("agreement_signing_date","board_approval_date"))\
-        #         .withColumn("Time_taken_for_Repayment",F.when(F.col("loan_status") == "Fully Repaid", F.datediff("last_repayment_date","first_repayment_date")).otherwise(F.lit(None)))
+        bsq1 = df.withColumn("Days_to_Sign_the_loan",F.datediff("agreement_signing_date","board_approval_date"))\
+                .withColumn("Time_taken_for_Repayment",F.when(F.col("loan_status") == "Fully Repaid", F.datediff("last_repayment_date","first_repayment_date")).otherwise(F.lit(None)))
         
         # Find the  top three countries had huge amount of loans and it quickly dropped.
         bsq2 = df.groupby("country")\
@@ -52,11 +52,22 @@ class BankLoan:
                     .withColumn("Percentage of Loan", F.round((F.col("Original Principle Amount")*100)/total_amount,0))\
                     .orderBy(F.col("Percentage of Loan").desc())
         
-        return (bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, df)
+        # Amount of Loan each year for every region
+        bsq8 = df.groupBy("region",F.year("end_of_period"))\
+                    .agg(F.sum("orig_prin_amount").alias("Sum_Principle_Amount"))
+                    
+        # Region with the highest cancellation amount segregated with loan type
+        bsq9 = df.groupBy("region","loan_type")\
+                    .agg(F.sum("cancelled_amount").alias("cancelled_amount"))
+        return (bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, bsq8, bsq9, df)
     
     # Save the final Dataframe in your desired location in different codecs for parquet format
-    def load(self, bsq1, bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, transformedDF):
-        
+    def load(self, bsq1, bsq2, bsq3, bsq4, bsq5, bsq6, bsq7, bsq8,bsq9, transformedDF):
+        # transformedDF.withColumn("row_id", F.monotonically_increasing_id())\
+        #             .write\
+        #             .bucketBy(50,key='row_id')\
+        #             .sortBy('country') \
+        #             .saveAsTable('bucketed_dataframe', format='parquet')
         final_df = transformedDF.repartition('region')
         codecs = ["snappy","gzip","lz4","bzip2","deflate"]
         file_format = ["parquet", "orc"]
