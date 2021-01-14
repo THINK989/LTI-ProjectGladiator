@@ -2,7 +2,7 @@ import pyspark.sql.functions as F
 from pprint import pprint 
 from collections import defaultdict
 import csv, os
-# from googletrans import Translator
+from itertools import chain
 
 def delete_columns(df):
     # dict_ = {column:df.filter(df[column].isNull()).count() for column in df.columns}
@@ -80,6 +80,23 @@ def string_handling(df):
     return df.withColumn("region_upper", F.upper(F.col("region"))).drop("region")\
             .withColumnRenamed("region_upper","region")
 
+def write_borrower(df):
+    borrowers=list(set(df.select("borrower").rdd.flatMap(lambda x:x).collect()))
+    with open('borrower.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["borrower"])
+        for borrower in borrowers:
+            writer.writerow([borrower])      
+    return df
+
+def translator_dict(df):
+    with open('borrower.csv', 'r') as csv_file:
+        reader = csv.reader(csv_file)
+        next(reader, None)
+        borrower_translation = {borrower:translation for borrower, translation in reader}  
+    translator_mapping = F.create_map([F.lit(x) for x in chain(*borrower_translation.items())])   
+    df = df.withColumn("borrower_clone", F.coalesce(translator_mapping[F.col("borrower")],F.col("borrower")))      
+    return df
 
 def clean_borrower(df):
     #TODO: Change case, remove special characters, replace empty string with "OTHER"
@@ -91,4 +108,4 @@ def clean_borrower(df):
 
 
 def preprocess(df):
-    return string_handling(clean_borrower(handling_null(country_code_hashmap(delete_columns(df)))))
+    return string_handling(clean_borrower(translator_dict(handling_null(country_code_hashmap(delete_columns(df))))))
