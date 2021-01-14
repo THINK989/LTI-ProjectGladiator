@@ -22,7 +22,16 @@ class KafkaLoans:
                 for row in csv_reader:
                     data = dumps(row)
                     producer.send('wb_loans', value=data)
-
+        
+        consumer = KafkaConsumer(
+                    "wb_loans",
+                    bootstrap_servers=['localhost:9092'],
+                    auto_offset_reset='earliest',
+                    enable_auto_commit=True,
+                    value_deserializer=lambda x: loads(x.decode('utf-8')))
+        for message in consumer:
+            print ("%s:%d:%d: key=%s value=%s" % (message.topic, message.partition,message.offset, message.key,message.value))
+    
     # run ETL function
     def run(self):
         self.kafka_stream_in()
@@ -35,7 +44,7 @@ if __name__ == "__main__":
     findspark.init()
     from json import dumps
     from pyspark.sql import SparkSession
-    from kafka import KafkaProducer
+    from kafka import KafkaProducer, KafkaConsumer
     import pyspark.sql.functions as F
     from pathlib import Path
     from data_clean import preprocess
